@@ -1,5 +1,6 @@
 import unittest
 from functools import cache
+from typing import Optional, List
 
 from aocd.models import Puzzle
 
@@ -34,7 +35,7 @@ def part1(input_data, times=25):
 
 def part2_too_slow(input_data, times):
     stones = parse(input_data)
-    next_stone = list(range(len(stones) + 1))[1:]
+    next_stone : List[Optional[int]] = list(range(len(stones) + 1))[1:]
     next_stone[-1] = None
     for t in range(times):
         i = 0
