@@ -114,7 +114,6 @@ def make_direct(sx, sy, nodes):
 
 def find_paths_with_cost(sy, sx, ey, ex, sd, nodes, best_cost):
     queue = [(0, sy, sx, sd, [(sy, sx, sd)])]  # cost, x, y, dir, from_dir, path
-    visited = set()
     cost = defaultdict(lambda: float('inf'))
     best_paths_to_node = defaultdict(list)
     while len(queue) > 0:
@@ -124,12 +123,12 @@ def find_paths_with_cost(sy, sx, ey, ex, sd, nodes, best_cost):
             best_paths_to_node[cy, cx, cd].append(path)
             print(f"Exit reached with length {len(path)} path {path}")
             continue
-        if (cy, cx, cd) in visited:
+
+        if (cy, cx, cd) in cost: # visited
             if ccost == cost[(cy, cx, cd)] and ccost <= best_cost:
                 best_paths_to_node[cy, cx, cd].append(path)
             continue
         cost[(cy, cx, cd)] = min(ccost, cost[(cy, cx, cd)])
-        visited.add((cy, cx, cd))
 
         if ccost <= best_cost:
             best_paths_to_node[cy, cx, cd].append(path)
@@ -140,7 +139,7 @@ def find_paths_with_cost(sy, sx, ey, ex, sd, nodes, best_cost):
             if (ny, nx) in path:
                 continue
             next_dir = get_dir(cy, cx, ny, nx)
-            if (ny, nx, next_dir) in visited:
+            if (ny, nx, next_dir) in cost:
                 continue
             if next_dir == cd:
                 heapq.heappush(queue, (ccost + 1, ny, nx, cd, path + [(ny, nx, next_dir)]))
