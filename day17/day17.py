@@ -130,7 +130,6 @@ def dfs(prog):
     queue = list(range(8))
     while len(queue) > 0:
         num = queue.pop(0)
-        print(num)
         out = just_source(num)
         if expected[-len(out):] == out: # one numer closer
             for p in range(8):
