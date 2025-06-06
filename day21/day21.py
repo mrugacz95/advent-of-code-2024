@@ -1,8 +1,10 @@
 import unittest
 import re
+from collections import defaultdict
 from functools import cache
 
 from aocd.models import Puzzle
+from tqdm import tqdm
 
 puzzle = Puzzle(year=2024, day=21)
 
@@ -36,6 +38,7 @@ dirpad = [
 
 DIR_POS = pad_to_dict(dirpad)
 
+
 @cache
 def find_path(pos, num, use_numpad):
     if use_numpad:
@@ -44,7 +47,6 @@ def find_path(pos, num, use_numpad):
     else:
         positions = DIR_POS
         pad = dirpad
-
 
     def next_move(from_pos, to_pos):
         h_diff = abs(from_pos[1] - to_pos[1])
@@ -145,7 +147,7 @@ def part1(input_data):
     return ans
 
 
-def find_longer_movement(numcode: str, dir_robots: int ) -> str:
+def measure_longer_movement(numcode: str, dir_robots: int) -> int:
     pos = (3, 2)
     num_robot_path = ""
     for num in numcode:
@@ -154,26 +156,43 @@ def find_longer_movement(numcode: str, dir_robots: int ) -> str:
         num_robot_path += "A"
 
     prev_robot_path = num_robot_path
-    for i in range(dir_robots):
-        pos = (0, 2)
-        new_robot_path = ""
-        for d in prev_robot_path:
-            path, pos = find_path(pos, d, False)
-            new_robot_path += path
-            new_robot_path += "A"
-        prev_robot_path = new_robot_path
-        print("Length of robot path", i + 1, ":", len(prev_robot_path)) # :)
+    queue = []
+    for char in prev_robot_path:
+        queue.append(
+            (char, 0)  # (new_char, depth, pos)
+        )
 
-    return prev_robot_path
+    last_path_length = defaultdict(int)
+    paths = defaultdict(lambda: "")
+
+    robots_pos = {depth: (0, 2) for depth in range(0, dir_robots + 1)}
+
+    while len(queue) > 0:
+        new_char, depth = queue.pop(0)
+        pos = robots_pos[depth]
+
+        last_path_length[depth] += 1
+        paths[depth] += new_char
+
+        new_robot_path, new_pos = find_path(pos, new_char, False)
+        new_robot_path += "A"
+        robots_pos[depth] = new_pos
+
+        if depth  == dir_robots:
+            last_path_length[depth + 1] += 1
+        else:
+            queue = list(map(lambda c: (c, depth + 1), new_robot_path)) + queue
+
+    return last_path_length[dir_robots]
 
 
-def part2(input_data, dir_robots = 25):
+def part2(input_data, dir_robots=25):
     codes = parse(input_data)
     ans = 0
     for code in codes:
-        path = find_longer_movement(code, dir_robots)
-        print(f"Code: {code}, Path: {path} Num: {int(code[:-1])}, Path length: {len(path)}")
-        ans += len(path) * int(code[:-1])
+        path_length = measure_longer_movement(code, dir_robots)
+        print(f"Code: {code}, Num: {int(code[:-1])}, Path length: {path_length}")
+        ans += path_length * int(code[:-1])
     return ans
 
 
@@ -194,6 +213,13 @@ class Day21(unittest.TestCase):
 
     def test_validate_path(self):
         self.assertEqual(validate_path(find_movement('343A')), '343A')
+
+    def test_validate_other_path(self):
+        self.assertEqual(validate_path(find_movement('029A')), '029A')
+        # 68 v<A<AA>>^AvAA<^A>Av<<A>>^AvA^Av<A>^Av<<A>^A>AAvA^Av<A<A>>^AAAvA<^A>A
+        # 28 v<<A>>^A<A>AvA<^AA>Av<AAA>^A
+        # 12 <A^A>^^AvvvA
+        # 4  029A
 
     def test_part1_example(self):
         self.assertEqual(126384, part1(puzzle.examples[0].input_data))
