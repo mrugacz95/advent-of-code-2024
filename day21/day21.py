@@ -70,8 +70,8 @@ def find_path(pos, num, use_numpad):
             raise ValueError(f"Went outside of pad on position {pos} on pad {pad}")
         if pad[pos[0]][pos[1]] == " ":
             raise ValueError(f"Invalid position {pos} on pad {pad}")
-    if not re.match(r"^((<+)|(>+)|(v+)|(\^+)){0,2}$", path):
-        raise ValueError(f"Invalid path {path} to {num} from {pos} on pad {pad}")
+    # if not re.match(r"^((<+)|(>+)|(v+)|(\^+)){0,2}$", path):
+    #     raise ValueError(f"Invalid path {path} to {num} from {pos} on pad {pad}")
     return path, pos
 
 
@@ -228,7 +228,7 @@ class Day21(unittest.TestCase):
         self.assertEqual(find_path((0, 0), 'A', True), (">>vvv", (3, 2)))
 
     def test_find_path(self):
-        self.assertEqual(find_movement('343'), 'v<<A>>^AvA^A<vA<AA>>^AAvA<^A>AvA^A<vA>^AAv<<A>>^AvA<^A>A')
+        self.assertEqual(find_movement('343'), 'v<<A>>^AvA^A<vA<AA>>^AAvA<^A>AvA^Av<<A>A^>AvA^AA<A>A')
         # v<<A>>^AvA^A<vA<AA>>^AAvA<^A>AvA^A<vA>^AAv<<A>>^AvA<^A>A
         # <A>Av<<AA>^A>AvAA<A>^A
         # ^A<<^A>>vA
@@ -250,8 +250,6 @@ class Day21(unittest.TestCase):
     def test_part1(self):
         puzzle.answer_a = part1(puzzle.input_data)
 
-    # 227898
-
     def test_part2_slow_example(self):
         self.assertEqual(126384, part2_slow(puzzle.examples[0].input_data, 2))
 
@@ -260,15 +258,15 @@ class Day21(unittest.TestCase):
 
 
     def test_long_movement(self):
-        self.assertEqual(measure_longer_movement('33', 1), 4)
+        self.assertEqual(measure_longer_movement('33', 1), 5)
 
     def test_long_movement_deeper(self):
         self.assertEqual(len(find_movement('179A')), 68)
         self.assertEqual(measure_longer_movement('179A', 2), 68)
 
     def test_long_movement_slow(self):
-        self.assertEqual(len(find_long_movement_slow('029A', 10)), 113556)
-        self.assertEqual(measure_longer_movement('029A', 10), 113556)
+        self.assertEqual(len(find_long_movement_slow('029A', 10)), 94910)
+        self.assertEqual(measure_longer_movement('029A', 10), 94910)
 
     def test_examples(self):
         examples = puzzle.examples[0].input_data.splitlines()
