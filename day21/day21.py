@@ -1,10 +1,9 @@
-import unittest
 import re
-from collections import defaultdict
+import unittest
 from functools import cache
+from typing import Tuple
 
 from aocd.models import Puzzle
-from tqdm import tqdm
 
 puzzle = Puzzle(year=2024, day=21)
 
@@ -51,14 +50,14 @@ def find_path(pos, num, use_numpad):
     def next_move(from_pos, to_pos):
         h_diff = abs(from_pos[1] - to_pos[1])
         v_diff = abs(from_pos[0] - to_pos[0])
-        if from_pos[0] < to_pos[0] and pad[from_pos[0] + v_diff][from_pos[1]] != " ":
-            return v_diff, 0, "v" * v_diff
-        elif from_pos[1] < to_pos[1] and pad[from_pos[0]][from_pos[1] + h_diff] != " ":
-            return 0, h_diff, ">" * h_diff
-        elif from_pos[1] > to_pos[1] and pad[from_pos[0]][from_pos[1] - h_diff] != " ":
+        if from_pos[1] > to_pos[1] and pad[from_pos[0]][from_pos[1] - h_diff] != " ":
             return 0, -h_diff, "<" * h_diff
+        elif from_pos[0] < to_pos[0] and pad[from_pos[0] + v_diff][from_pos[1]] != " ":
+            return v_diff, 0, "v" * v_diff
         elif from_pos[0] > to_pos[0] and pad[from_pos[0] - v_diff][from_pos[1]] != " ":
             return -v_diff, 0, "^" * v_diff
+        elif from_pos[1] < to_pos[1] and pad[from_pos[0]][from_pos[1] + h_diff] != " ":
+            return 0, h_diff, ">" * h_diff
         raise ValueError(f"Cannot move from {from_pos} to {to_pos}")
 
     path = ""
@@ -146,6 +145,33 @@ def part1(input_data):
         ans += len(path) * int(code[:-1])
     return ans
 
+def find_long_movement_slow(numcode: str, dir_robots) -> str:
+    pos = (3, 2)
+    num_robot_path = ""
+    for num in numcode:
+        path, pos = find_path(pos, num, use_numpad=True)
+        num_robot_path += path
+        num_robot_path += "A"
+
+    robot_path = num_robot_path
+    for  i in range(dir_robots):
+        pos = (0, 2)
+        next_robot_path = ""
+        for d in robot_path:
+            path, pos = find_path(pos, d, use_numpad=False)
+            next_robot_path += path
+            next_robot_path += "A"
+        robot_path = next_robot_path
+    return robot_path
+
+def part2_slow(input_data, dir_robots=25):
+    codes = parse(input_data)
+    ans = 0
+    for code in codes:
+        path = find_long_movement_slow(code,dir_robots)
+        print(f"Code: {code}, Path: {path} Num: {int(code[:-1])}, Path length: {len(path)}")
+        ans += len(path) * int(code[:-1])
+    return ans
 
 def measure_longer_movement(numcode: str, dir_robots: int) -> int:
     pos = (3, 2)
@@ -155,35 +181,31 @@ def measure_longer_movement(numcode: str, dir_robots: int) -> int:
         num_robot_path += path
         num_robot_path += "A"
 
-    prev_robot_path = num_robot_path
-    queue = []
-    for char in prev_robot_path:
-        queue.append(
-            (char, 0)  # (new_char, depth, pos)
-        )
+    @cache
+    def dfs(current_pos: Tuple[int,int], new_char: str, depth: int) -> Tuple[int, Tuple[int,int]]: # -> cost, pos
 
-    last_path_length = defaultdict(int)
-    paths = defaultdict(lambda: "")
+        if depth == dir_robots:
+            return 1, (-1,-1)
 
-    robots_pos = {depth: (0, 2) for depth in range(0, dir_robots + 1)}
-
-    while len(queue) > 0:
-        new_char, depth = queue.pop(0)
-        pos = robots_pos[depth]
-
-        last_path_length[depth] += 1
-        paths[depth] += new_char
-
-        new_robot_path, new_pos = find_path(pos, new_char, False)
+        new_robot_path, new_pos = find_path(current_pos, new_char, False)
         new_robot_path += "A"
-        robots_pos[depth] = new_pos
 
-        if depth  == dir_robots:
-            last_path_length[depth + 1] += 1
-        else:
-            queue = list(map(lambda c: (c, depth + 1), new_robot_path)) + queue
 
-    return last_path_length[dir_robots]
+        cost = 0
+        new_robot_pos = (0,2)
+        for next_char in new_robot_path:
+            new_cost, new_robot_pos = dfs(new_robot_pos, next_char, depth + 1)
+            cost += new_cost
+        return cost, new_pos
+
+    final_cost = 0
+
+    pos = (0, 2)
+    for char in num_robot_path:
+        next_cost, pos = dfs(pos, char, 0)
+        final_cost += next_cost
+
+    return final_cost
 
 
 def part2(input_data, dir_robots=25):
@@ -191,8 +213,9 @@ def part2(input_data, dir_robots=25):
     ans = 0
     for code in codes:
         path_length = measure_longer_movement(code, dir_robots)
-        print(f"Code: {code}, Num: {int(code[:-1])}, Path length: {path_length}")
+        print(f"Code: {code}, Num: {int(code[:-1])}, Path length:", path_length, " result ", path_length * int(code[:-1]))
         ans += path_length * int(code[:-1])
+    print("Total:", ans)
     return ans
 
 
@@ -229,8 +252,29 @@ class Day21(unittest.TestCase):
 
     # 227898
 
+    def test_part2_slow_example(self):
+        self.assertEqual(126384, part2_slow(puzzle.examples[0].input_data, 2))
+
     def test_part2_example(self):
         self.assertEqual(126384, part2(puzzle.examples[0].input_data, 2))
+
+
+    def test_long_movement(self):
+        self.assertEqual(measure_longer_movement('33', 1), 4)
+
+    def test_long_movement_deeper(self):
+        self.assertEqual(len(find_movement('179A')), 68)
+        self.assertEqual(measure_longer_movement('179A', 2), 68)
+
+    def test_long_movement_slow(self):
+        self.assertEqual(len(find_long_movement_slow('029A', 10)), 113556)
+        self.assertEqual(measure_longer_movement('029A', 10), 113556)
+
+    def test_examples(self):
+        examples = puzzle.examples[0].input_data.splitlines()
+        for example in examples:
+            self.assertEqual(len(find_long_movement_slow(example, 15)), measure_longer_movement(example, 15))
+            print(example, measure_longer_movement(example, 15))
 
     def test_part2(self):
         puzzle.answer_b = part2(puzzle.input_data)
