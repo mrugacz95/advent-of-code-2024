@@ -54,6 +54,10 @@ def part2(input_data):
     # find a sequence
     max_banana = 0
     for seq in tqdm(list(product(range(-9, 9), repeat=4))):
+        if seq[-1] <= 0:
+            continue
+        if sum(seq) <= 0:
+            continue
         seq_str = ',' + ','.join(map(str, seq)) + ','
         current_price = calculate_bananas_from_sequence(sellers_deltas, sellers_prices, seq_str)
         max_banana = max(current_price, max_banana)
