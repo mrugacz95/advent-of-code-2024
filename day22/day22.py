@@ -1,4 +1,5 @@
 import unittest
+from collections import defaultdict
 from itertools import pairwise, combinations_with_replacement, product
 
 from aocd.models import Puzzle
@@ -50,7 +51,7 @@ def part2(input_data):
         deltas = []
         for i1, i2 in pairwise(price):
             deltas.append(i2 - i1)
-        sellers_deltas.append(',' + ','.join(map(str, deltas)) + ',')
+        sellers_deltas.append(',' + ','.join(map(str, deltas)) + ',') # change to string for faster search
     # find a sequence
     max_banana = 0
     for seq in tqdm(list(product(range(-9, 9), repeat=4))):
@@ -81,11 +82,27 @@ def find_seq(deltas, seq):
     return deltas[:idx].count(',')
 
 
-def find_seq_slow(deltas, seq):
-    for idx in range(len(deltas) - len(seq) + 1):
-        if deltas[idx:idx + len(seq)] == seq:
-            return idx
-    return -1
+def part2_faster(input_data):
+    data = parse(input_data)
+    # preprocess data
+    sellers_secrets = [list(next_price(secret)) for secret in data]
+    sellers_prices = [list(map(lambda x: x % 10, secrets)) for secrets in sellers_secrets]
+    possible_sequences = defaultdict(list)
+    for prices in sellers_prices:
+        visited = set()
+        deltas = []
+        for i1, i2 in pairwise(prices):
+            deltas.append(i2 - i1)
+            if len(deltas) > 4:
+                seq = tuple(deltas[-4:])
+                if seq not in visited:
+                    possible_sequences[seq].append(i2)
+                    visited.add(seq)
+    # find a sequence
+    max_banana = 0
+    for seq, prices in possible_sequences.items():
+        max_banana = max(max_banana, sum(prices))
+    return max_banana
 
 
 class Day22(unittest.TestCase):
@@ -107,10 +124,10 @@ class Day22(unittest.TestCase):
         puzzle.answer_a = part1(puzzle.input_data)
 
     def test_part2_example(self):
-        self.assertEqual(23, part2("1\n2\n3\n2024"))
+        self.assertEqual(23, part2_faster("1\n2\n3\n2024"))
 
     def test_part2(self):
-        puzzle.answer_b = part2(puzzle.input_data)
+        puzzle.answer_b = part2_faster(puzzle.input_data)
 
 
 if __name__ == '__main__':
