@@ -1,5 +1,5 @@
 import unittest
-from itertools import pairwise, combinations_with_replacement
+from itertools import pairwise, combinations_with_replacement, product
 
 from aocd.models import Puzzle
 from tqdm import tqdm
@@ -41,7 +41,7 @@ def prune(number):
 
 
 def part2(input_data):
-    data =  parse(input_data)
+    data = parse(input_data)
     # preprocess data
     sellers_secrets = [list(next_price(secret)) for secret in data]
     sellers_prices = [list(map(lambda x: x % 10, secrets)) for secrets in sellers_secrets]
@@ -50,11 +50,12 @@ def part2(input_data):
         deltas = []
         for i1, i2 in pairwise(price):
             deltas.append(i2 - i1)
-        sellers_deltas.append(deltas)
+        sellers_deltas.append(',' + ','.join(map(str, deltas)) + ',')
     # find a sequence
     max_banana = 0
-    for seq in  tqdm(combinations_with_replacement(range(-9, 9), 4)):
-        current_price = calculate_bananas_from_sequence(sellers_deltas, sellers_prices, seq)
+    for seq in tqdm(list(product(range(-9, 9), repeat=4))):
+        seq_str = ',' + ','.join(map(str, seq)) + ','
+        current_price = calculate_bananas_from_sequence(sellers_deltas, sellers_prices, seq_str)
         max_banana = max(current_price, max_banana)
     return max_banana
 
@@ -70,6 +71,13 @@ def calculate_bananas_from_sequence(sellers_deltas, sellers_prices, seq):
 
 
 def find_seq(deltas, seq):
+    idx = deltas.find(seq)
+    if idx == -1:
+        return -1
+    return deltas[:idx].count(',')
+
+
+def find_seq_slow(deltas, seq):
     for idx in range(len(deltas) - len(seq) + 1):
         if deltas[idx:idx + len(seq)] == seq:
             return idx
