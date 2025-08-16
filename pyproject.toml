@@ -5,5 +5,6 @@ description = "Add your description here"
 requires-python = ">=3.12"
 dependencies = [
     "advent-of-code-data>=2.1.0",
+    "graphviz>=0.21",
     "tqdm>=4.67.1",
 ]
