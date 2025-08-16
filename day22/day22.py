@@ -1,6 +1,6 @@
 import unittest
 from collections import defaultdict
-from itertools import pairwise, combinations_with_replacement, product
+from itertools import pairwise, product
 
 from aocd.models import Puzzle
 from tqdm import tqdm
